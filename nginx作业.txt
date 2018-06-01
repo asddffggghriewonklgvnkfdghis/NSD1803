@@ -14,7 +14,7 @@ d) 安装前创建用户 nginx,安装时指定安装用户为 nginx
 e) 百度搜索 nginx 的 stub_status 模块的作用,以及如何修
 改配置文件,通过 stub_status 查看 nginx 服务器的状态
 
-
+ARFsda
 
 # yum  -y  install gcc  pcre-devel  openssl-devel
 # useradd  -s  /sbin/nologin   nginx
