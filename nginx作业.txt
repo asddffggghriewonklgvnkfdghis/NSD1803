@@ -1,0 +1,279 @@
+7虚拟机
+
+1. 克隆 4 台新虚拟机,IP 配置如下:
+虚拟机 7 eth2:201.1.1.100
+虚拟机 8 eth2:201.1.1.5
+        eth3:201.1.2.5
+虚拟机 9 eth3:201.1.2.100
+虚拟机 10 eth3:201.1.2.200
+a) 在虚拟机 7 上源码安装 Nginx 软件,要求如下:
+b) 通过./configure --help 查看该软件支持的模块(--with
+开头)
+c) 要求安装 ssl 模块、stream 模块以及 stub_status 模块
+d) 安装前创建用户 nginx,安装时指定安装用户为 nginx
+e) 百度搜索 nginx 的 stub_status 模块的作用,以及如何修
+改配置文件,通过 stub_status 查看 nginx 服务器的状态
+
+
+
+# yum  -y  install gcc  pcre-devel  openssl-devel
+# useradd  -s  /sbin/nologin   nginx
+# cd  /lnmp_soft/
+# tar -xf  nginx-1.12.2.tar.gz
+# cd  nginx-1.12.2/
+# ./configure  \
+> --prefix=/usr/local/nginx  \
+> --user=nginx  \
+> --group=nginx  \
+> --with-http_ssl_module  \
+> --with-stream  \
+> --with-http_stub_status_module
+# make  &&  make  install
+# ln  -s  /usr/local/nginx/sbin/nginx   /sbin/
+# nginx
+# nginx  -s  reload
+
+2. 在虚拟机 7 上修改 nginx 配置文件,实现基于域名的虚拟主机:
+a) 域名分别为 www.tarena.com 和 www.tedu.cn
+b) 注意客户端验证需要修改/etc/hosts
+c) 访问 www.tedu.cn 时会提示输入用户名与密码,输入正确才可以流量页面
+d) 页面内容任意
+
+
+# yum -y install  httpd-tools
+# htpasswd -c /usr/local/nginx/pass   tom  
+# nginx  -s  reload
+
+# vim /usr/local/nginx/conf/nginx.conf
+# mkdir  /usr/local/nginx/www
+# echo "WWW"  >  /usr/local/nginx/www/index.html
+# nginx  -s  reload
+
+# vim /etc/hosts
+201.1.1.100 www.tedu.cn  www.tarena.com
+# firefox http://www.tedu.cn
+# firefox http://www.tarena.com
+
+
+
+3. 虚拟机 8,9,10 均安装 nginx 软件作为服务器
+a) 虚拟机 7 作为客户端
+b) 虚拟机 8 的 nginx 配置为集群调度器,算法为轮询算法,集群池为 201.1.2.100 和 201.1.2.200,配置最大失
+败次数为 1,失败超时时间为 30 秒,201.1.2.100 的权重为 2
+c)
+虚拟机 9 和虚拟机 10 配置为 LNMP 环境,支
+持 PHP 动态页面
+d)
+在虚拟机 9 上创建测试页面(静态页面至少一
+个,连接数据库的动态页面至少一个,参考
+lnmp_soft/php_scripts/mysql.php)
+e)
+配置 rsync 自动将虚拟机 9 上的页面自动同步到
+虚拟机 10,确保两台主机的页面一致
+
+
+8虚拟机
+3b.
+# yum   -y  install gcc  pcre-devel  openssl-devel
+# cd  /lnmp_soft/
+# tar -xf  nginx-1.12.2.tar.gz
+# cd  nginx-1.12.2/
+# ./configure  \
+> --with-stream  \
+> --with-http_ssl_module 
+# make  &&  make  install
+# ln  -s  /usr/local/nginx/sbin/nginx   /sbin/
+# nginx
+# nginx  -s  reload
+
+# vim /usr/local/nginx/conf/nginx.conf
+upstream  webs {
+server 201.1.2.100:80 weight=2 max_fails=1 fail_timeout=30;
+server 201.1.2.200:80 weight=1 max_fails=1 fail_timeout=30;
+ }
+...
+location / {
+proxy_pass http://webs;
+....
+# nginx  -s  reload
+# curl  http://201.1.1.5
+
+
+3c
+9虚拟机
+# yum   -y  install gcc  pcre-devel  openssl-devel
+# cd  /lnmp_soft/
+# tar -xf  nginx-1.12.2.tar.gz
+# cd  nginx-1.12.2/
+# ./configure  \
+> --with-stream  \
+> --with-http_ssl_module 
+# make  &&  make  install
+# ln  -s  /usr/local/nginx/sbin/nginx   /sbin/
+# nginx
+# nginx  -s  reload
+
+# yum  -y  install php  php-mysql  php-fpm
+# yum  -y  install mariadb    mariadb-server  mariadb-devel
+# systemctl   restart   mariadb
+# systemctl   restart   php-fpm
+# vim  /usr/local/nginx/conf/nginx.conf
+location ~ \.php$ {
+    root           html;
+    fastcgi_pass   127.0.0.1:9000;
+    fastcgi_index  index.php;
+    include        fastcgi.conf;
+}
+# nginx  -s  reload
+
+
+
+
+
+10虚拟机
+# yum   -y  install gcc  pcre-devel  openssl-devel
+# cd  /lnmp_soft/
+# tar -xf  nginx-1.12.2.tar.gz
+# cd  nginx-1.12.2/
+# ./configure  \
+> --with-stream  \
+> --with-http_ssl_module 
+# make  &&  make  install
+# ln  -s  /usr/local/nginx/sbin/nginx   /sbin/
+# nginx
+# nginx  -s  reload
+
+# yum  -y  install php  php-mysql  php-fpm
+# yum  -y  install mariadb    mariadb-server  mariadb-devel
+# systemctl   restart   mariadb
+# systemctl   restart   php-fpm
+# vim  /usr/local/nginx/conf/nginx.conf
+location ~ \.php$ {
+    root           html;
+    fastcgi_pass   127.0.0.1:9000;
+    fastcgi_index  index.php;
+    include        fastcgi.conf;
+}
+# nginx  -s  reload
+
+
+3d
+9虚拟机
+
+# vim /usr/local/nginx/html/test1.php 
+# vim /usr/local/nginx/html/test2.php
+# firefox  http://201.1.2.100/test2.php
+# firefox http://201.1.2.100/test1.php
+# echo "suibian"  >  /usr/local/nginx/html/index.html
+
+3e
+
+# ssh-keygen
+# ls  /root/.ssh/
+# ssh-copy-id  root@201.1.2.200
+#gcc make
+# tar -xf /tools/inotify-tools-3.13.tar.gz  -C   /
+# cd /inotify-tools-3.13/
+#./configure
+# make
+# make install
+
+# vim  /root/rsync.sh
+#!/bin/bash
+while  inotifywait  -rqq  /usr/local/nginx/
+do
+rsync --delete -az  /usr/local/nginx/   root@201.1.2.200:/usr/local/nginx/
+done  &
+# sh /root/rsync.sh
+
+
+
+4. 延续前面的实验,优化所有的 nginx 软件,要求如下:
+a) 所有 nignx 均不要显示版本号
+b) 并发连接数调整为 65536
+c) 调整后使用 ab 软件测试并发量
+d) 使用“watch -n 1 ss -s”命令观察服务器连接数
+变化(每秒执行一次 ss 命令)
+e)
+百度搜索 ss -s 命令的用法
+
+
+9虚拟机
+# vim /usr/local/nginx/conf/nginx.conf
+ worker_connections  65536;
+# nginx  -s  reload
+# ulimit  -Hn 100000
+# ulimit  -Sn 100000
+# ab  -n 2000  -c  2000 http://201.1.2.100/
+
+10虚拟机
+# vim /usr/local/nginx/conf/nginx.conf
+ worker_connections  65536;
+# nginx  -s  reload
+# ulimit  -Hn 100000
+# ulimit  -Sn 100000
+# ab  -n 2000  -c  2000 http://201.1.2.200/
+
+
+5. 附加题目:优化 Linux 内核参数,要求如下:
+a) 百度搜索:tcp_syncookies 参数、用法、如果调整值
+b) 百度搜索:tcp_fin_timeout 参数、用法、如果调整值
+c) 百度搜索:tcp_retries 参数、用法、如果调整值
+
+6. 在虚拟机 9 和 10 上部署 PHP 登陆环境:
+a) 部署 lnmp 环境(支持动静分离)
+b) 部署测试性页面(参考 lnmp_soft/php_scripts/php-memcached-demo.tar.gz)
+c) 测试登陆页面的效果
+d) 查看/etc/php-fpm.d/www.conf 配置文件,确认 session 会话信息保存位置
+e) 到/var/lib/php/session 目录下查看 session 文件
+
+
+9虚拟机
+# yum -y install memcached
+# systemctl   start  memcached
+# cd /lnmp_soft/php_scripts/
+# tar -xf  php-memcached-demo.tar.gz 
+# cd  php-memcached-demo/
+# cp  -a * /usr/local/nginx/html/
+# firefox  http://201.1.2.100/index.php
+# cd /var/lib/php/session/
+# ls
+# cat sess_afru3u8u0lkc29pdcb43k9h3e3
+
+
+10虚拟机
+# yum -y install memcached
+# systemctl   start  memcached
+# cd /lnmp_soft/php_scripts/
+# tar -xf  php-memcached-demo.tar.gz 
+# cd  php-memcached-demo/
+# cp  -a * /usr/local/nginx/html/
+# firefox  http://201.1.2.100/index.php
+# cd /var/lib/php/session/
+# ls
+# cat sess_3nk9a8p57fjh1uq82b68fmt0d7
+
+
+7. 使用 memcached 实现会话信息共享
+a) 虚拟机 8 安装部署 memcached 缓存数据库
+b) 修改虚拟机 9 和 10 的配置,让 PHP 保存会话信息到 memcached
+c) 默认 PHP 无法连接 memcached,需要安装对应的扩展模块
+d) 完成后再次通过集群调度器访问登陆页面,测试登陆效果(为了查看效果,可用将后台页面的背景颜色适当
+调整)
+9、10虚拟机
+# vim /etc/php-fpm.d/www.conf
+php_value[session.save_handler] = memcache
+php_value[session.save_path] = "tcp://201.1.2.5:11211"
+# systemctl  restart  php-fpm
+
+8虚拟机
+# yum  -y  install  memcached
+# systemctl   restart mamcached
+
+
+
+asddffggghriewonklgvnkfdghis
+
+
+
+
